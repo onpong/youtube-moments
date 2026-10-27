@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>拾刻 · YouTube 时间戳</title>
+  <link rel="stylesheet" href="panel.css">
+  <script type="module" src="panel.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="brand"><img src="icons/48.png" width="34" height="34" alt=""><div><h1>拾刻<span>MOMENTS</span></h1><p>把值得回看的瞬间，留下来。</p></div></div>
+    <button id="settings-toggle" class="icon-button" title="设置与备份" aria-label="设置与备份" aria-expanded="false">···</button>
+  </header>
+  <section id="settings" class="settings" aria-label="设置与备份" hidden>
+    <form id="shortcut-form">
+      <h2>按一个键，记下此刻</h2>
+      <label class="shortcut-switch"><input id="single-key-enabled" type="checkbox"> 启用页面单键记录</label>
+      <div class="shortcut-row"><label for="single-key">记录键</label><select id="single-key" aria-label="选择单键记录字母"></select><button type="submit" id="save-shortcut">保存设置</button></div>
+      <p id="shortcut-warning" class="fine">建议用 B。只在 YouTube 页面生效；输入搜索、评论或备注时不会触发。</p>
+      <p id="shortcut-feedback" role="status" hidden></p>
+    </form>
+    <hr class="settings-divider">
+    <h2>你的记录，随时带走</h2>
+    <p>导出全部记录。JSON 可用于恢复，Markdown 适合保存到笔记软件。</p>
+    <div class="export-grid"><button id="export-json">备份 JSON</button><button id="export-md">导出 Markdown</button></div>
+    <button id="import" class="import-button">导入 JSON 备份</button>
+    <p class="fine">导入会合并并跳过重复记录；冲突备注会作为单独记录保留。</p>
+    <input type="file" id="import-file" accept=".json,application/json" hidden>
+    <a id="shortcut-settings" href="#">设置备用组合快捷键 ↗</a>
+  </section>
+  <main>
+    <section class="capture" aria-label="记录当前视频">
+      <div class="eyebrow"><span class="dot"></span> NOW WATCHING</div>
+      <h2 id="current-title">正在连接当前页面…</h2>
+      <p id="current-status">打开 YouTube，开始收藏你的瞬间。</p>
+      <button id="record" class="primary" disabled><span>＋ 记下此刻</span><kbd id="shortcut">Alt ⇧ S</kbd></button>
+    </section>
+    <div id="error" class="error" role="alert" hidden></div>
+    <nav class="tabs" aria-label="记录范围">
+      <button id="tab-current" aria-pressed="true">当前视频 <span id="count-current">0</span></button>
+      <button id="tab-all" aria-pressed="false">全部记录 <span id="count-all">0</span></button>
+    </nav>
+    <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="搜索标题、备注或时间…" aria-label="搜索记录"></label>
+    <div class="list-heading"><span id="list-label">视频时间线</span><span id="result-count"></span></div>
+    <div id="records" aria-live="polite"><div class="empty"><p>正在读取记录…</p></div></div>
+    <button id="load-more" class="load-more" hidden>显示更多记录</button>
+  </main>
+  <footer><span class="local-dot"></span> 仅保存在此浏览器 <span class="footer-sep">·</span> 记得定期备份</footer>
+  <div id="toast" role="status" hidden><span id="toast-text"></span><button id="undo" hidden>撤销</button></div>
+  <dialog id="edit-dialog" aria-labelledby="edit-heading">
+    <form id="edit-form">
+      <div class="dialog-heading"><h2 id="edit-heading">这一刻的备注</h2><button id="edit-close" type="button" class="icon-button" aria-label="关闭编辑">×</button></div>
+      <p id="edit-context"></p>
+      <label for="edit-note">备注 <span>可留空</span></label>
+      <textarea id="edit-note" rows="6" maxlength="5000" placeholder="写下要点，给未来的自己一个线索。"></textarea>
+      <div class="editor-meta"><span>Ctrl / ⌘ + Enter 保存</span><span id="note-count">0 / 5000</span></div>
+      <p id="edit-error" class="error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="edit-cancel" type="button" class="secondary">取消</button><button id="edit-save" type="submit" class="primary">保存备注</button></div>
+    </form>
+  </dialog>
+  <template id="record-template">
+    <article class="moment">
+      <div class="moment-top"><button class="time-button" title="跳转并播放"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 3 8 5-8 5z"/></svg><span></span></button><span class="date"></span></div>
+      <p class="note"></p>
+      <div class="moment-actions"><button class="edit">编辑备注</button><button class="copy">复制链接</button><button class="delete" aria-label="删除记录">删除</button></div>
+    </article>
+  </template>
+</body>
+</html>

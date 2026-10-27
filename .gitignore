@@ -1,0 +1,9 @@
+node_modules/
+.test-artifacts/
+playwright-report/
+test-results/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
