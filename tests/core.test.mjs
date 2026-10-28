@@ -15,7 +15,26 @@ test('秒数向下取整，支持零点和超过一小时', () => {
   assert.equal(timestampUrl(base),'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=755s');
 });
 test('JSON 备份往返保留记录内容', () => {
-  assert.deepEqual(parseBackup(JSON.stringify({schemaVersion:1,records:[base]})),[base]);
+  assert.deepEqual(parseBackup(JSON.stringify({schemaVersion:1,records:[base]})),[{...base,mastered:false}]);
+});
+test('旧记录默认未攻克，已攻克状态可备份且只接受布尔值', () => {
+  const completed = {...base, mastered:true};
+  assert.deepEqual(parseBackup(JSON.stringify({schemaVersion:1,records:[completed]})),[completed]);
+  assert.equal(createRecord(completed).mastered,false);
+  for (const mastered of [null, 'true', 1, {}]) {
+    assert.throws(()=>parseBackup(JSON.stringify({schemaVersion:1,records:[{...base,mastered}]})));
+  }
+  assert.ok(toMarkdown([completed]).includes('- [x] [12:35]'));
+  assert.ok(toMarkdown([base]).includes('- [ ] [12:35]'));
+});
+test('攻克状态冲突保留两版，旧备份重复导入不重复增项', () => {
+  const completed = {...base,mastered:true};
+  const merged = mergeRecords([completed],[base],()=> 'pending');
+  assert.equal(merged.added,1);
+  assert.equal(merged.records[0].mastered,true);
+  assert.equal(merged.records[1].mastered,false);
+  assert.equal(mergeRecords(merged.records,[base]).added,0);
+  assert.equal(mergeRecords([base],[{...base,mastered:false}]).added,0);
 });
 test('非法备份整体拒绝，不容忍损坏记录', () => {
   for (const value of ['no json', '{"schemaVersion":2,"records":[]}', JSON.stringify({schemaVersion:1,records:[base,{...base,seconds:-1}]}),JSON.stringify({schemaVersion:1,records:[{...base,note:'x'.repeat(5001)}]}),JSON.stringify({schemaVersion:1,records:[{...base,createdAt:'no date'}]})]) assert.throws(()=>parseBackup(value));

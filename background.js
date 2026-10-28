@@ -95,6 +95,16 @@ async function handle(message, sender) {
   }
   requirePanel(sender);
   switch (message.type) {
+    case 'SET_MASTERED': {
+      if (typeof message.mastered !== 'boolean') throw new Error('攻克状态格式不正确。');
+      return mutate(state => {
+        const record = state.records.find(r => r.id === message.id);
+        if (!record) throw new Error('这条记录已被删除。');
+        record.mastered = message.mastered;
+        record.updatedAt = new Date().toISOString();
+        return record;
+      });
+    }
     case 'SET_SHORTCUT': {
       const settings = MomentsShortcut.normalize(message.settings);
       await chrome.storage.local.set({ [SHORTCUT_KEY]: settings });

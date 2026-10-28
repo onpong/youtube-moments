@@ -13,6 +13,7 @@ let contextRequest = 0;
 let storeRequest = 0;
 let recordBusy = false;
 let nativeShortcut = '';
+const masteryPending = new Set();
 async function refreshShortcutSettings() {
   const value = await send({ type: 'GET_SHORTCUT' });
   $('single-key-enabled').checked = value.enabled;
@@ -96,6 +97,11 @@ function render() {
       if (displayed++ >= pageSize) break;
       const card = $('record-template').content.firstElementChild.cloneNode(true);
       card.dataset.id = record.id;
+      card.classList.toggle('mastered', !!record.mastered);
+      const checkbox = card.querySelector('.mastery-checkbox');
+      checkbox.checked = !!record.mastered;
+      checkbox.disabled = masteryPending.has(record.id);
+      checkbox.setAttribute('aria-label', formatTime(record.seconds) + ' 已攻克');
       card.querySelector('.time-button span').textContent = formatTime(record.seconds);
       card.querySelector('.time-button').setAttribute('aria-label', '跳转到 ' + formatTime(record.seconds));
       card.querySelector('.date').textContent = dateLabel(record.createdAt);
@@ -174,6 +180,29 @@ $('record').addEventListener('click', async () => {
 for (const value of ['current', 'all']) $('tab-' + value).addEventListener('click', () => { mode = value; pageSize = 100; render(); });
 $('search').addEventListener('input', () => { pageSize = 100; render(); });
 $('load-more').addEventListener('click', () => { pageSize += 100; render(); });
+$('records').addEventListener('change', async event => {
+  const checkbox = event.target;
+  if (!checkbox.matches('.mastery-checkbox')) return;
+  const id = checkbox.closest('.moment').dataset.id;
+  if (masteryPending.has(id)) return;
+  const mastered = checkbox.checked;
+  masteryPending.add(id);
+  checkbox.disabled = true;
+  clearError();
+  try {
+    await send({ type: 'SET_MASTERED', id, mastered });
+    await refreshStore();
+    toast(mastered ? '已标记为攻克' : '已取消攻克标记');
+  } catch (error) { showError(error); }
+  finally {
+    masteryPending.delete(id);
+    const restoreFocus = document.activeElement === checkbox || document.activeElement === document.body;
+    render();
+    if (restoreFocus) {
+      [...$('records').querySelectorAll('.moment')].find(card => card.dataset.id === id)?.querySelector('.mastery-checkbox').focus();
+    }
+  }
+});
 $('records').addEventListener('click', async event => {
   const button = event.target.closest('button');
   const card = button?.closest('.moment');

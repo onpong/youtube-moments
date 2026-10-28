@@ -27,6 +27,7 @@ function requireString(value, max, label, empty = false) {
 }
 export function validateRecord(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('记录格式不正确。');
+  if (value.mastered !== undefined && typeof value.mastered !== 'boolean') throw new Error('攻克状态格式不正确。');
   if (typeof value.videoId !== 'string' || !VIDEO_ID.test(value.videoId)) throw new Error('视频 ID 格式不正确。');
   if (!Number.isInteger(value.seconds) || value.seconds < 0 || value.seconds > 31536000) throw new Error('时间戳格式不正确。');
   for (const key of ['createdAt', 'updatedAt']) {
@@ -38,12 +39,13 @@ export function validateRecord(value) {
     title: requireString(value.title, 300, '视频标题'),
     seconds: value.seconds,
     note: requireString(value.note, 5000, '备注', true),
+    mastered: value.mastered ?? false,
     createdAt: new Date(value.createdAt).toISOString(),
     updatedAt: new Date(value.updatedAt).toISOString()
   };
 }
 export function createRecord(capture, now = new Date().toISOString(), id = crypto.randomUUID()) {
-  return validateRecord({ ...capture, seconds: Math.floor(capture.seconds), note: '', id, createdAt: now, updatedAt: now });
+  return validateRecord({ ...capture, seconds: Math.floor(capture.seconds), note: '', mastered: false, id, createdAt: now, updatedAt: now });
 }
 export function parseBackup(text) {
   if (typeof text !== 'string') throw new Error('备份内容无效。');
@@ -59,7 +61,7 @@ export function parseBackup(text) {
 export function mergeRecords(existing, incoming, newId = () => crypto.randomUUID()) {
   const records = existing.map(r => ({ ...r }));
   const ids = new Set(records.map(r => r.id));
-  const fingerprint = r => JSON.stringify([r.videoId, r.seconds, r.note, r.createdAt]);
+  const fingerprint = r => JSON.stringify([r.videoId, r.seconds, r.note, r.createdAt, r.mastered ?? false]);
   const seen = new Set(records.map(fingerprint));
   let added = 0;
   for (const raw of incoming) {
@@ -95,7 +97,7 @@ export function toMarkdown(records) {
   const lines = ['# 拾刻 · YouTube 时间戳', ''];
   for (const group of groupRecords(records)) {
     lines.push('## ' + escapeMarkdown(group.title.replace(/[\r\n]+/g, ' ')), '', '[打开视频](https://www.youtube.com/watch?v=' + group.videoId + ')', '');
-    for (const r of group.records) lines.push('- [' + formatTime(r.seconds) + '](' + timestampUrl(r) + ')' + (r.note ? ' — ' + escapeMarkdown(r.note).replace(/\r?\n/g, '\n  ') : ''));
+    for (const r of group.records) lines.push('- [' + (r.mastered ? 'x' : ' ') + '] [' + formatTime(r.seconds) + '](' + timestampUrl(r) + ')' + (r.note ? ' — ' + escapeMarkdown(r.note).replace(/\r?\n/g, '\n  ') : ''));
     lines.push('');
   }
   return lines.join('\n');
